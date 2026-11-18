@@ -4,7 +4,6 @@ services:
     image: redis:7-alpine
     container_name: ai-task-redis
     restart: unless-stopped
-
   backend:
     build: ./backend
     container_name: ai-task-backend
@@ -14,10 +13,12 @@ services:
       - ./backend/.env
     environment:
       REDIS_HOST: redis
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     depends_on:
       - redis
     restart: unless-stopped
-
   worker:
     build: ./worker
     container_name: ai-task-worker
@@ -25,11 +26,13 @@ services:
       - ./backend/.env
     environment:
       REDIS_HOST: redis
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     depends_on:
       - redis
       - backend
     restart: unless-stopped
-
   frontend:
     build: ./frontend
     container_name: ai-task-frontend
