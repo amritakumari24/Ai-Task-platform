@@ -32,6 +32,12 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Backend is healthy",
+  });
+});
 
 const PORT = process.env.PORT || 5000;
 
