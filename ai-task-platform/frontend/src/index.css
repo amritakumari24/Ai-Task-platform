@@ -146,3 +146,71 @@ textarea {
     align-items: flex-start;
   }
 }
+
+
+.status-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.running {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-badge.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.failed {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+
+@media (max-width: 600px) {
+  .dashboard header {
+    padding: 16px 20px;
+  }
+
+  .dashboard header h1 {
+    font-size: 22px;
+  }
+
+  .dashboard header div {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .dashboard main {
+    margin: 20px auto;
+    padding: 0 12px;
+  }
+
+  .task-form,
+  .task-list {
+    padding: 18px;
+  }
+
+  .task-card {
+    padding: 14px;
+  }
+
+  .task-card button {
+    width: 100%;
+  }
+
+  .auth-card {
+    padding: 24px 18px;
+  }
+}

@@ -11,17 +11,20 @@ function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+const [loadingTasks, setLoadingTasks] = useState(true);
+const fetchTasks = useCallback(async () => {
+  try {
+    const response = await API.get("/tasks");
+    setTasks(response.data.tasks || response.data);
+    setError("");
+  } catch (err) {
+    setError("Could not load tasks. Please try again.");
+  } finally {
+    setLoadingTasks(false);
+  }
+}, []);
 
-  const fetchTasks = useCallback(async () => {
-    try {
-      const response = await API.get("/tasks");
-      setTasks(response.data.tasks || response.data);
-    } catch (err) {
-      setError("Could not load tasks");
-    }
-  }, []);
 
-  // Automatically fetch tasks every 2 seconds
   useEffect(() => {
     fetchTasks();
 
@@ -97,29 +100,46 @@ function Dashboard() {
 
         {error && <p className="error">{error}</p>}
 
-        <section className="task-list">
-          <h2>Your Tasks</h2>
+    
+<section className="task-list">
+  <h2>Your Tasks</h2>
 
-          {tasks.map((task) => (
-            <div className="task-card" key={task._id}>
-              <p><strong>Input:</strong> {task.inputText}</p>
-              <p><strong>Operation:</strong> {task.operation}</p>
-              <p><strong>Status:</strong> {task.status}</p>
-              <p>
-                <strong>Result:</strong>{" "}
-                {task.status === "success"
-                  ? task.result
-                  : task.status === "failed"
-                  ? task.error || "Task failed"
-                  : "Waiting..."}
-              </p>
+  {loadingTasks ? (
+    <p>Loading your tasks...</p>
+  ) : tasks.length === 0 ? (
+    <div className="empty-state">
+      <h3>No tasks yet!</h3>
+      <p>Create your first task using the form above.</p>
+    </div>
+  ) : (
+    tasks.map((task) => (
+      <div className="task-card" key={task._id}>
+        <p><strong>Input:</strong> {task.inputText}</p>
+        <p><strong>Operation:</strong> {task.operation}</p>
 
-              <button onClick={() => deleteTask(task._id)}>
-                Delete
-              </button>
-            </div>
-          ))}
-        </section>
+        <p>
+          <strong>Status:</strong>{" "}
+          <span className={`status-badge ${task.status}`}>
+            {task.status.toUpperCase()}
+          </span>
+        </p>
+
+        <p>
+          <strong>Result:</strong>{" "}
+          {task.status === "success"
+            ? task.result
+            : task.status === "failed"
+            ? task.error || "Task failed"
+            : "Waiting..."}
+        </p>
+
+        <button onClick={() => deleteTask(task._id)}>
+          Delete
+        </button>
+      </div>
+    ))
+  )}
+</section>
       </main>
     </div>
   );
