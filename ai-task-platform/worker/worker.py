@@ -12,9 +12,11 @@ load_dotenv("../backend/.env")
 r = redis.Redis(
     host="127.0.0.1",
     port=6379,
-    decode_responses=True
+    decode_responses=True,
+    socket_connect_timeout=10,
+    socket_keepalive=True,
+    health_check_interval=30
 )
-
 
 mongo_client = MongoClient(os.getenv("MONGO_URI"))
 db = mongo_client["ai-task-platform"]
