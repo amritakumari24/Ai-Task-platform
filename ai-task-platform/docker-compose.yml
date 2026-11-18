@@ -1,0 +1,40 @@
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ai-task-redis
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: ai-task-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build: ./worker
+    container_name: ai-task-worker
+    env_file:
+      - ./backend/.env
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+      - backend
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: ai-task-frontend
+    ports:
+      - "4173:4173"
+    depends_on:
+      - backend
+    restart: unless-stopped
