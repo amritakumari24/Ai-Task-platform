@@ -1,0 +1,110 @@
+
+name: AI Task Platform CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: amritakumari24
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout application
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            ai-task-platform/backend/package-lock.json
+            ai-task-platform/frontend/package-lock.json
+
+      - name: Check backend
+        working-directory: ai-task-platform/backend
+        run: |
+          npm ci
+          node --check server.js
+
+      - name: Check frontend
+        working-directory: ai-task-platform/frontend
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check Python worker
+        run: python -m py_compile ai-task-platform/worker/worker.py
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ai-task-platform/backend
+          push: true
+          tags: ghcr.io/amritakumari24/ai-task-backend:${{ github.sha }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ai-task-platform/frontend
+          push: true
+          tags: ghcr.io/amritakumari24/ai-task-frontend:${{ github.sha }}
+
+      - name: Build and push worker
+        uses: docker/build-push-action@v6
+        with:
+          context: ai-task-platform/worker
+          push: true
+          tags: ghcr.io/amritakumari24/ai-task-worker:${{ github.sha }}
+
+      - name: Checkout infrastructure repository
+        uses: actions/checkout@v4
+        with:
+          repository: amritakumari24/ai-task-platform-infra
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          path: infra
+          ref: main
+
+      - name: Update Kubernetes image tags
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          sed -i "s|image: .*|image: ghcr.io/amritakumari24/ai-task-backend:${IMAGE_TAG}|" infra/k8s/backend.yaml
+          sed -i "s|image: .*|image: ghcr.io/amritakumari24/ai-task-frontend:${IMAGE_TAG}|" infra/k8s/frontend.yaml
+          sed -i "s|image: .*|image: ghcr.io/amritakumari24/ai-task-worker:${IMAGE_TAG}|" infra/k8s/worker.yaml
+
+          cd infra
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add k8s/backend.yaml k8s/frontend.yaml k8s/worker.yaml
+
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: update application images"
+            git push origin main
+          fi
